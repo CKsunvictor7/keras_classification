@@ -35,8 +35,6 @@ def split_by_StratifiedKFold(data, labels, nb_splits=3):
     :param nb_splits:  Number of folds. Must be at least 2.
     :return: train_data, train_labels, val_data, val_labels of one k-fold
     """
-    # input: X, y are np.array
-    # output: train_index, test_index are index
     skf = StratifiedKFold(n_splits=nb_splits, shuffle=True)
 
     index_folds = []

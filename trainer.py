@@ -48,13 +48,6 @@ args = parser.parse_args()
 
 
 nb_classes = 0
-"""
-input_size = (229, 229)
-img_channels = 3
-total_epochs = 30
-batch_size = 32
-val_batch_size = 32
-"""
 
 
 # Image Augmentation
@@ -200,6 +193,83 @@ def files_augmentation(file_list, desired_nb):
 
 
 def make_balanced_dataset(category_list):
+    superdir_path = '/mnt/dc/web_food_imgs_f/'
+    global nb_classes
+    nb_classes = len(category_list)
+    category_label_mapping = {}
+    train_data_list = []
+    val_data_list = []
+
+    train_data = []
+    train_labels = []
+    val_data = []
+    val_labels = []
+
+    # 1. read all image name list
+    for idx, category in enumerate(category_list):
+        img_list = []
+        if isinstance(category, list):
+            # ['steak', 'sirloin_steak', 'dice_steak', 'fillet_steak'] the 1st element 'steak' is confusion_category name, others are categories
+            # for example [['steak', 'sirloin_steak', 'dice_steak', 'fillet_steak'], 'tomato_curry', 'bulgogi', 'roast_beef', 'yakiniku__karubi']
+            category_label_mapping[category[0]] = idx
+            for sub_c in category[1::]:
+                # due to the fold in web_food_imgs_f is divided into '1' and '2'
+                dir_path = os.path.join(superdir_path, sub_c, '1')
+                img_list = img_list + [os.path.join(dir_path, f) for f in
+                            os.listdir(dir_path) if
+                            f.endswith(
+                                ('.jpg', 'jpeg', '.png', '.bmp', '.JPG', 'JPEG',
+                                 '.PNG', '.BMP'))]
+                dir_path = os.path.join(superdir_path, sub_c, '2')
+                img_list = img_list + [os.path.join(dir_path, f) for f in
+                             os.listdir(dir_path)
+                             if f.endswith(
+                        ('.jpg', 'jpeg', '.png', '.bmp', '.JPG', 'JPEG',
+                         '.PNG', '.BMP'))]
+        else:
+            category_label_mapping[category] = idx
+            # due to the fold in web_food_imgs_f is divided into '1' and '2'
+            dir_path = os.path.join(superdir_path, category, '1')
+            img_list = img_list + [os.path.join(dir_path, f) for f in os.listdir(dir_path) if
+                        f.endswith(('.jpg', 'jpeg', '.png', '.bmp', '.JPG', 'JPEG',
+                                    '.PNG', '.BMP'))]
+            dir_path = os.path.join(superdir_path, category, '2')
+            img_list = img_list + [os.path.join(dir_path, f) for f in os.listdir(dir_path)
+                        if f.endswith(('.jpg', 'jpeg', '.png', '.bmp', '.JPG', 'JPEG',
+                             '.PNG', '.BMP'))]
+
+        print('{} = {}'.format(category, len(img_list)))
+        tmp_train_data, tmp_val_data = utils.split_by_KFold(img_list, nb_splits=10)
+        train_data_list.append(tmp_train_data)
+        val_data_list.append(tmp_val_data)
+
+    print(category_label_mapping)
+
+    # 2. do balance data augmentation
+    # for train data
+    desired_nb =  max([len(x) for x in train_data_list])
+    print('desired_nb=', desired_nb)
+    for idx, x in enumerate(train_data_list):
+        train_data = train_data + files_augmentation(x, desired_nb)
+        train_labels = train_labels + [idx]*desired_nb
+
+    # for val data
+    desired_nb = max([len(x) for x in val_data_list])
+    print('desired_nb=', desired_nb)
+    for idx, x in enumerate(val_data_list):
+        val_data = val_data + files_augmentation(x, desired_nb)
+        val_labels = val_labels + [idx] * desired_nb
+
+    # reform the categories
+    merged_categories = []
+    for k, v in category_label_mapping.items():
+        merged_categories.append(k)
+
+    # 3. shuffle
+    return utils.suffle_data(train_data, train_labels), val_data, val_labels, merged_categories
+
+
+def make_balanced_dataset_(category_list):
     superdir_path = '/mnt/dc/web_food_imgs/'
     global nb_classes
     nb_classes = len(category_list)
@@ -250,7 +320,7 @@ def runner(category_list, input_size, img_channels, nb_epochs, batch_size, val_b
            model_path='model.hdf5', log_path='log.csv'):
     # data, label reading
     # (train_data, train_labels), val_data, val_labels  = make_dataset(category_list) # make_dataset(category_list), make_balanced_dataset(category_list)
-    (train_data, train_labels), val_data, val_labels = make_balanced_dataset(
+    (train_data, train_labels), val_data, val_labels, merged_categories = make_balanced_dataset(
         category_list)
     train_labels = train_labels
     val_labels = val_labels
@@ -307,7 +377,7 @@ def runner(category_list, input_size, img_channels, nb_epochs, batch_size, val_b
 
     EStopping = EarlyStopping(
         monitor='val_loss',  # val_loss
-        patience=3,
+        patience=5,
         verbose=1,
         mode='auto')
     Mcheckpoint = ModelCheckpoint(
@@ -319,8 +389,8 @@ def runner(category_list, input_size, img_channels, nb_epochs, batch_size, val_b
     reduce_lr = ReduceLROnPlateau(
         monitor='val_loss',
         factor=0.1,
-        patience=2,
-        min_lr=0.00001)
+        patience=3,
+        min_lr=0.000001)
     csv_logger = CSVLogger(log_path)
     # t0=time.time()
     print('start training...')
@@ -367,9 +437,9 @@ def runner(category_list, input_size, img_channels, nb_epochs, batch_size, val_b
     np.set_printoptions(precision=2)
 
     # Plot non-normalized confusion matrix
-    utils.plot_confusion_matrix(cm, classes=category_list,
+    utils.plot_confusion_matrix(cm, classes=merged_categories,
                                 title='cm_{}'.format(title))
-    utils.plot_confusion_matrix(cm, classes=category_list, normalize=True,
+    utils.plot_confusion_matrix(cm, classes=merged_categories, normalize=True,
                                 title='cm_n_{}'.format(title))
 
     """
