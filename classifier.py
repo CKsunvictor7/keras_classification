@@ -1,15 +1,12 @@
 """
 ###Template of Keras Classifier###
 
-classifier of Food / Not-Food,
-input: img
-output: 0 = Not-Food, 1 = Food
-
+input: dir of images to be classified
+output: image_path, probability, classification result in csv
 """
 
 import os
 os.environ['KERAS_BACKEND']='tensorflow'
-
 import numpy as np
 import os
 from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
@@ -18,9 +15,10 @@ from keras.utils import np_utils
 from keras.models import model_from_json
 from keras import backend as K
 
-model_path = os.path.join(os.path.sep, 'mnt2', 'models', 'Food_NFood', 'Inceptionv3_Mix.hdf5')
-network_path = os.path.join(os.path.sep, 'mnt2', 'models', 'Food_NFood', 'Inceptionv3.json')
-network_path = os.path.abspath(network_path)
+model_path = os.path.join(os.path.sep, '__.hdf5')
+network_path = os.path.join(os.path.sep, '__.json')
+img_dir = os.path.join(os.path.sep, '')
+result_csv_path = os.path.join(os.path.sep, '_.csv')
 nb_classes = 2
 input_size = (229, 229)
 img_channels = 3
@@ -43,12 +41,30 @@ auggen = ImageDataGenerator(
     vertical_flip=False)  # randomly flip images
 
 
+def read_imglist(super_dir):
+    """
+    :param super_dir: dir of images to be classified
+    :return: list of abs image path
+    """
+    img_file_list = []
+    for dir in os.listdir(super_dir):
+        dir_path = os.path.join(super_dir, dir)
+        if os.path.isdir(dir_path):
+            img_file_list += [os.path.join(dir_path, f)
+                              for f in os.listdir(dir_path)
+                              if f.endswith(('.jpg', 'jpeg', '.png', '.bmp', '.JPG', 'JPEG', '.PNG', '.BMP'))]
+    return img_file_list
+
+
 def load_preprocess_img(path):
+    """
+    :param path: path of image
+    :return:  reshaped image array 
+    """
     try:
         img = img_to_array(load_img(path, target_size=input_size))
         # do aug
         # img = auggen.random_transform(img)
-        # reshape to ()
         if K.image_data_format() == 'channels_first':  # (channels, rows, cols)
             img = img.reshape(img_channels, input_size[0], input_size[1])
             # for single image
@@ -62,28 +78,8 @@ def load_preprocess_img(path):
         return None
 
 
-def read_imglist(super_dir):
-    img_file_list = []
-    for dir in os.listdir(super_dir):
-        dir_path = os.path.join(super_dir, dir)
-        if os.path.isdir(dir_path):
-            img_file_list += [os.path.join(dir_path, f)
-                              for f in os.listdir(dir_path)
-                              if f.endswith(('.jpg', 'jpeg', '.png', '.bmp', '.JPG', 'JPEG', '.PNG', '.BMP'))]
-    return img_file_list
-
-def tester():
-    for f in os.listdir('/mnt/dc/web_food_imgs/chūkadon'):
-        with open('/mnt2/projects/food_nonfood/annam/prediction.csv', 'a+') as w:
-            path = os.path.join('/mnt/dc/web_food_imgs/chūkadon',f)
-            l = path.split(os.path.sep)
-            print(l)
-            # UnicodeEncodeError: 'ascii' codec can't encode characters in position 2-3: ordinal not in range(128)
-            w.write('{}\n'.format(os.path.join(l[-2],l[-1])))
-
-
 def main():
-    img_file_list = read_imglist('/mnt/dc/web_food_imgs')
+    img_file_list = read_imglist(img_dir)
     nb_img = len(img_file_list)
     print('nb of images is ', nb_img)
 
@@ -111,23 +107,20 @@ def main():
         probs = model.predict(batch_img, batch_size=batch_size)
         probs_list = np.max(probs, axis=1)
         preds_list = np.argmax(probs, axis=1)
-        with open('/mnt2/projects/food_nonfood/annam/prediction.csv', 'a+') as w:
-            for idx_f, f in enumerate(batch_img_file_list):
-                # only record the nonfood images
-                if preds_list[idx_f] == 0:
-                    l = f.split(os.path.sep)
-                    try:
-                        w.write('{}\n'.format(os.path.join(l[-2], l[-1])))
-                        print('{},{:.4f},{}'.format(os.path.join(l[-2], l[-1]), probs_list[idx_f], preds_list[idx_f]))
-                    except:
-                        # TODO UnicodeEncodeError: 'ascii' codec can't encode characters in position 2-3: ordinal not in range(128)
-                        w.write('sth wrong during output\n')
-                        print('sth wrong during output')
 
+        with open(result_csv_path, 'a+') as w:
+            for idx_f, f in enumerate(batch_img_file_list):
+                l = f.split(os.path.sep)
+                try:
+                    w.write('{}\n'.format(os.path.join(l[-2], l[-1])))
+                    # image_path, probability, classification result
+                    print('{},{:.4f},{}'.format(os.path.join(l[-2], l[-1]), probs_list[idx_f], preds_list[idx_f]))
+                except:
+                    w.write('sth wrong during output\n')
+                    print('sth wrong during output')
         batch_idx = batch_idx + 1
 
     print('prediction done')
-
 
 
 if __name__ == '__main__':

@@ -23,30 +23,6 @@ from sklearn.metrics import confusion_matrix
 import utils
 
 
-import argparse
-# python Food_NFood_generator.py -o 2 -n Xcept_Mix_2.json -m Xcept_Mix_2.hdf5 -l Xcept_Mix_2.csv
-
-"""
-python trainer.py  -o 1 -n Inceptionv3.json -m Inceptionv3_fc.hdf5 -l Inceptionv3_fc.csv
-python Food_NFood_generator.py -o 1 -n Inceptionv3.json -m Inceptionv3_Mix.hdf5 -l Inceptionv3_Mix.csv
-python Food_NFood_generator.py -o 2 -n xinception.json -m Xcept_Mix.hdf5 -l Xcept_Mix.csv
-python Food_NFood_generator.py -o 3 -n ResNet50.json -m ResNet50_Mix.hdf5 -l ResNet50_Mix.csv
-"""
-
-"""
-parser = argparse.ArgumentParser(description='~~~')
-parser.add_argument(
-    '-o',
-    '--option',
-    help='1=Inceptionv3, 2=xinception 3=ResNet50',
-    type=int)
-parser.add_argument('-n', '--network_f', help='network_filename', type=str)
-parser.add_argument('-m', '--model_f', help='model_filename', type=str)
-parser.add_argument('-l', '--log_f', help='log_filename', type=str)
-args = parser.parse_args()
-"""
-
-
 nb_classes = 0
 
 
