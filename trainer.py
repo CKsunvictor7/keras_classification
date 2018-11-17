@@ -1,6 +1,6 @@
 """
 ###Template of Keras model Trainer###
-Food and Non-Food classification on Large Datasets
+Binary classification on Large Datasets
 
 
 """
