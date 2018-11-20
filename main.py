@@ -1,21 +1,28 @@
-from config import training_params
-from trainer import runner
-from confusion_category_list import super_category_list
+"""
+read config, choose network then launch model training in trainer.py
+
+"""
 from keras.applications.inception_v3 import InceptionV3
 from keras.applications.xception import Xception
 from keras.applications.resnet50 import ResNet50
+from config import training_params
+from trainer import runner
 
-
-network_list = {
+NETWORK_LIST = {
     'InceptionV3':InceptionV3(include_top=False, weights='imagenet'),
-    #'Xception':Xception(include_top=False, weights='imagenet'),
-    #'ResNet50':ResNet50(include_top=False, weights='imagenet')
+    'Xception':Xception(include_top=False, weights='imagenet'),
+    'ResNet50':ResNet50(include_top=False, weights='imagenet')
 }
 
+SUPER_CATEGORY = {
+    'exp1': ['cls1', 'cls2']
+}
+
+
 def main():
-    for super_name, category_list in super_category_list.items():
+    for super_name, category_list in SUPER_CATEGORY.items():
         # train the models using networks in network_list
-        for k, base_model in network_list.items():
+        for _, base_model in NETWORK_LIST.items():
             kwargs = {
                 'category_list': category_list,
                 'input_size':training_params['input_size'],
