@@ -1,11 +1,20 @@
+"""
+tool functions
+"""
+import itertools
 from sklearn.model_selection import StratifiedKFold, KFold
 import numpy as np
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-import itertools
 
 
-def suffle_data(id_list, label_list):
+def shuffle_data(id_list, label_list):
+    """
+    shuffle id_list and label_list by the same seed
+    :param id_list:
+    :param label_list:
+    :return:
+    """
     idx = np.arange(len(id_list))
     np.random.shuffle(idx)
     shuffled_list = [id_list[k] for k in idx]
@@ -14,6 +23,12 @@ def suffle_data(id_list, label_list):
 
 
 def split_by_KFold(data, nb_splits=3):
+    """
+
+    :param data:
+    :param nb_splits:
+    :return:
+    """
     kfold = KFold(n_splits=nb_splits, shuffle=True)
 
     index_folds = []
@@ -91,9 +106,7 @@ def plot_confusion_matrix(cm, classes,
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-    # print(cm)
-
-    plt.figure(figsize=(12,9))
+    plt.figure(figsize=(12, 9))
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
